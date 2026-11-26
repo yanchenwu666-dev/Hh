@@ -1,3 +1,835 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>乘法练习第一版</title><style>*{box-sizing:border-box}body{margin:0;background:#eff6ff;font-family:system-ui,sans-serif;color:#183153}main{max-width:620px;margin:auto;padding:20px}h1{text-align:center;color:#2563eb}section{background:white;border-radius:24px;padding:22px;margin:15px 0;box-shadow:0 5px 20px #24476b12}button,select,input{font:inherit;border-radius:14px;padding:12px;border:1px solid #cbd5e1}button{cursor:pointer;background:#2563eb;color:white;border:0;font-weight:bold}button:disabled{opacity:.4}label{display:block;margin:12px 0}select{width:100%;background:white}#question{text-align:center;font-size:clamp(38px,10vw,66px);font-weight:800;margin:24px 0}#answer{width:100%;text-align:center;font-size:36px}#feedback{text-align:center;min-height:48px;font-size:22px;font-weight:bold;padding:12px}.stats{display:flex;justify-content:space-around;text-align:center;gap:8px}.stats b{display:block;font-size:25px}.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.keys button{background:#e0edff;color:#173e82;font-size:25px}.wide{width:100%;margin-top:10px}.secondary{background:#e2e8f0;color:#183153}progress{width:100%;height:15px;accent-color:#22a06b}[hidden]{display:none!important}</style></head><body><main><h1>🌟 乘法练习第一版</h1><section id="setup"><label>练习难度<select id="level"><option value="5">简单：1～5 的乘法</option><option value="9">进阶：1～9 的乘法</option><option value="10" selected>全部：1～10 的乘法</option></select></label><label>练习题量<select id="count"><option>20</option><option>50</option><option>100</option><option value="0">无限练习</option></select></label><button class="wide" id="start">开始练习</button><button class="wide secondary" id="retry" disabled>错题重练</button></section><section id="play" hidden><div class="stats"><div>已答对<b id="correct">0</b></div><div>正确率<b id="rate">—</b></div><div>连续答对<b id="streak">0</b></div></div><p id="position"></p><progress id="progress" value="0" max="100"></progress><div id="question"></div><form id="form"><input id="answer" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="3" autocomplete="off" placeholder="输入答案" aria-label="输入答案"><div class="keys" id="keys"></div><button class="wide" id="submit">确认答案</button></form><div id="feedback" aria-live="polite"></div><button id="next" class="wide" hidden>下一题</button><button id="stop" class="wide secondary">结束练习</button></section><section id="result" hidden><h2>🎉 练习完成！</h2><p id="summary"></p><div id="mistakes"></div><button class="wide" id="again">返回练习设置</button></section></main><script>
-const $=id=>document.getElementById(id);let pool=[],queue=[],wrong=new Map(),q,total,done,correct,streak,locked,review=false;function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}function key(q){return q.join('×')}function begin(retry){review=retry;pool=retry?[...wrong.values()]:[];if(!retry){let n=+$('level').value;for(let a=1;a<=n;a++)for(let b=1;b<=n;b++)pool.push([a,b]);}if(!pool.length)return;total=retry?pool.length:+$('count').value;queue=[];done=correct=streak=0;$('setup').hidden=$('result').hidden=true;$('play').hidden=false;stats();next()}function stats(){$('correct').textContent=correct;$('rate').textContent=done?Math.round(correct/done*100)+'%':'—';$('streak').textContent=streak;$('progress').hidden=!total;$('progress').value=total?done/total*100:0}function next(){if(total&&done>=total){finish();return}if(!queue.length)queue=shuffle([...pool]);q=queue.pop();locked=false;$('position').textContent='第 '+(done+1)+' 题'+(total?' / '+total:'');$('question').textContent=q[0]+' × '+q[1]+' = ?';$('answer').value='';$('answer').readOnly=false;$('feedback').textContent='';$('submit').disabled=false;$('next').hidden=true}function check(e){e.preventDefault();if(locked)return;let s=$('answer').value.trim();if(!/^\d{1,3}$/.test(s)){$('feedback').textContent='请先输入数字';return}locked=true;done++;let v=q[0]*q[1];if(+s===v){correct++;streak++;wrong.delete(key(q));$('feedback').textContent='✓ 答对啦！';$('feedback').style.color='#15803d'}else{streak=0;wrong.set(key(q),q);$('feedback').textContent='正确答案是 '+v+'，继续加油！';$('feedback').style.color='#b91c1c'}$('answer').readOnly=true;$('submit').disabled=true;$('next').hidden=false;$('next').textContent=total&&done>=total?'查看成绩':'下一题';stats()}function finish(){$('play').hidden=true;$('result').hidden=false;$('summary').textContent=`完成 ${done} 题，答对 ${correct} 题，正确率 ${done?Math.round(correct/done*100):0}%。`;$('mistakes').textContent=wrong.size?'待复习错题：'+[...wrong.values()].map(q=>key(q)+'='+q[0]*q[1]).join('、'):'没有待复习错题！';$('retry').disabled=!wrong.size;$('retry').textContent='错题重练（'+wrong.size+'题）'}$('start').onclick=()=>begin(false);$('retry').onclick=()=>begin(true);$('form').onsubmit=check;$('next').onclick=next;$('stop').onclick=finish;$('again').onclick=()=>{$('result').hidden=true;$('setup').hidden=false};for(let k of ['1','2','3','4','5','6','7','8','9','清空','0','⌫']){let b=document.createElement('button');b.type='button';b.textContent=k;b.onclick=()=>{if(locked)return;let a=$('answer');a.value=k==='清空'?'':k==='⌫'?a.value.slice(0,-1):(a.value+k).slice(0,3)};$('keys').append(b)}document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('play').hidden&&locked&&e.target!==$('next')){e.preventDefault();next()}});
-</script></body></html>
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>乘法练习第一版</title>
+
+<style>
+
+* {
+
+    box-sizing: border-box;
+
+}
+
+body {
+
+    margin: 0;
+
+    padding: 20px;
+
+    font-family: Arial, sans-serif;
+
+    background: linear-gradient(135deg, #dbeafe, #e9d5ff);
+
+    min-height: 100vh;
+
+    text-align: center;
+
+}
+
+.container {
+
+    max-width: 500px;
+
+    margin: auto;
+
+    background: white;
+
+    padding: 24px;
+
+    border-radius: 25px;
+
+    box-shadow: 0 8px 30px #00000015;
+
+}
+
+h1 {
+
+    color: #6366f1;
+
+    font-size: 28px;
+
+}
+
+.settings {
+
+    display: flex;
+
+    gap: 10px;
+
+    margin-bottom: 15px;
+
+}
+
+select {
+
+    width: 50%;
+
+    padding: 12px;
+
+    border: 2px solid #ddd;
+
+    border-radius: 12px;
+
+    font-size: 16px;
+
+    background: white;
+
+}
+
+.stats {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 8px;
+
+    margin: 20px 0;
+
+}
+
+.stat {
+
+    background: #eef2ff;
+
+    border-radius: 12px;
+
+    padding: 12px 4px;
+
+    color: #4338ca;
+
+}
+
+.stat strong {
+
+    display: block;
+
+    font-size: 25px;
+
+    margin-top: 8px;
+
+}
+
+#question {
+
+    font-size: 55px;
+
+    font-weight: bold;
+
+    margin: 25px 0;
+
+    color: #222;
+
+}
+
+#answer {
+
+    width: 100%;
+
+    font-size: 36px;
+
+    padding: 12px;
+
+    text-align: center;
+
+    border: 3px solid #818cf8;
+
+    border-radius: 15px;
+
+    outline: none;
+
+}
+
+.keyboard {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 10px;
+
+    margin-top: 15px;
+
+}
+
+button {
+
+    border: none;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    font-weight: bold;
+
+    touch-action: manipulation;
+
+}
+
+.keyboard button {
+
+    background: #eef2ff;
+
+    color: #3730a3;
+
+    font-size: 28px;
+
+    padding: 15px;
+
+}
+
+.keyboard button:active {
+
+    background: #c7d2fe;
+
+}
+
+.submit {
+
+    width: 100%;
+
+    background: #22c55e;
+
+    color: white;
+
+    font-size: 24px;
+
+    padding: 15px;
+
+    margin-top: 15px;
+
+}
+
+.secondary {
+
+    width: 100%;
+
+    background: #6366f1;
+
+    color: white;
+
+    font-size: 17px;
+
+    padding: 13px;
+
+    margin-top: 10px;
+
+}
+
+#feedback {
+
+    min-height: 35px;
+
+    font-size: 23px;
+
+    font-weight: bold;
+
+    margin-top: 15px;
+
+}
+
+.progress {
+
+    height: 12px;
+
+    background: #e5e7eb;
+
+    border-radius: 20px;
+
+    overflow: hidden;
+
+}
+
+#bar {
+
+    width: 0%;
+
+    height: 100%;
+
+    background: #22c55e;
+
+    transition: width 0.3s;
+
+}
+
+#counter {
+
+    color: #666;
+
+    margin: 10px;
+
+}
+
+#result {
+
+    display: none;
+
+    padding: 20px;
+
+    background: #f0fdf4;
+
+    border-radius: 15px;
+
+    margin-top: 15px;
+
+}
+
+#result h2 {
+
+    color: #16a34a;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🌟 乘法练习第一版</h1>
+
+<p>每天练一练，成为乘法小达人！</p>
+
+<div class="settings">
+
+<select id="difficulty" onchange="startGame()">
+
+    <option value="easy">简单：1～5</option>
+
+    <option value="medium">进阶：1～7</option>
+
+    <option value="hard" selected>全部：1～10</option>
+
+</select>
+
+<select id="amount" onchange="startGame()">
+
+    <option value="20">20道题</option>
+
+    <option value="50">50道题</option>
+
+    <option value="100" selected>100道题</option>
+
+    <option value="200">200道题</option>
+
+    <option value="500">500道题</option>
+
+    <option value="0">无限练习</option>
+
+</select>
+
+</div>
+
+<div class="stats">
+
+    <div class="stat">
+
+        答对
+
+        <strong id="correct">0</strong>
+
+    </div>
+
+    <div class="stat">
+
+        正确率
+
+        <strong id="accuracy">0%</strong>
+
+    </div>
+
+    <div class="stat">
+
+        连续答对
+
+        <strong id="streak">0</strong>
+
+    </div>
+
+</div>
+
+<div class="progress">
+
+    <div id="bar"></div>
+
+</div>
+
+<p id="counter">第 1 题</p>
+
+<div id="game">
+
+<div id="question">2 × 3 = ?</div>
+
+<input
+
+    id="answer"
+
+    type="text"
+
+    inputmode="numeric"
+
+    maxlength="3"
+
+    autocomplete="off"
+
+    placeholder="输入答案"
+
+>
+
+<div class="keyboard">
+
+    <button onclick="addNumber('1')">1</button>
+
+    <button onclick="addNumber('2')">2</button>
+
+    <button onclick="addNumber('3')">3</button>
+
+    <button onclick="addNumber('4')">4</button>
+
+    <button onclick="addNumber('5')">5</button>
+
+    <button onclick="addNumber('6')">6</button>
+
+    <button onclick="addNumber('7')">7</button>
+
+    <button onclick="addNumber('8')">8</button>
+
+    <button onclick="addNumber('9')">9</button>
+
+    <button onclick="clearAnswer()">清空</button>
+
+    <button onclick="addNumber('0')">0</button>
+
+    <button onclick="deleteNumber()">⌫</button>
+
+</div>
+
+<button class="submit" onclick="checkAnswer()">
+
+    确认答案 ✓
+
+</button>
+
+<div id="feedback"></div>
+
+</div>
+
+<div id="result"></div>
+
+<button class="secondary" onclick="startGame()">
+
+    🔄 重新开始
+
+</button>
+
+<button class="secondary" onclick="practiceMistakes()">
+
+    📚 错题练习
+
+</button>
+
+</div>
+
+<script>
+
+let a = 1;
+
+let b = 1;
+
+let correct = 0;
+
+let total = 0;
+
+let streak = 0;
+
+let bestStreak = 0;
+
+let limit = 100;
+
+let mistakes = [];
+
+let questions = [];
+
+let reviewMode = false;
+
+let locked = false;
+
+let finished = false;
+
+let nextTimer = null;
+
+const answer = document.getElementById("answer");
+
+const feedback = document.getElementById("feedback");
+
+function shuffle(array) {
+
+    for (let i = array.length - 1; i > 0; i--) {
+
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [array[i], array[j]] = [array[j], array[i]];
+
+    }
+
+    return array;
+
+}
+
+function generateQuestions() {
+
+    let difficulty =
+
+        document.getElementById("difficulty").value;
+
+    let max = 10;
+
+    if (difficulty === "easy") max = 5;
+
+    if (difficulty === "medium") max = 7;
+
+    let list = [];
+
+    for (let x = 1; x <= max; x++) {
+
+        for (let y = 1; y <= max; y++) {
+
+            list.push([x, y]);
+
+        }
+
+    }
+
+    return shuffle(list);
+
+}
+
+function startGame() {
+
+    clearTimeout(nextTimer);
+
+    correct = 0;
+
+    total = 0;
+
+    streak = 0;
+
+    bestStreak = 0;
+
+    limit = Number(
+
+        document.getElementById("amount").value
+
+    );
+
+    reviewMode = false;
+
+    locked = false;
+
+    finished = false;
+
+    mistakes = [];
+
+    questions = generateQuestions();
+
+    document.getElementById("game").style.display = "block";
+
+    document.getElementById("result").style.display = "none";
+
+    feedback.textContent = "";
+
+    updateStats();
+
+    newQuestion();
+
+}
+
+function newQuestion() {
+
+    if (limit > 0 && total >= limit) {
+
+        finishGame();
+
+        return;
+
+    }
+
+    if (questions.length === 0) {
+
+        if (reviewMode) {
+
+            finishGame();
+
+            return;
+
+        }
+
+        questions = generateQuestions();
+
+    }
+
+    let question = questions.pop();
+
+    a = question[0];
+
+    b = question[1];
+
+    document.getElementById("question").textContent =
+
+        a + " × " + b + " = ?";
+
+    document.getElementById("counter").textContent =
+
+        limit === 0
+
+        ? "第 " + (total + 1) + " 题"
+
+        : "第 " + (total + 1) + " / " + limit + " 题";
+
+    answer.value = "";
+
+    feedback.textContent = "";
+
+    locked = false;
+
+}
+
+function addNumber(number) {
+
+    if (!locked && !finished && answer.value.length < 3) {
+
+        answer.value += number;
+
+    }
+
+}
+
+function clearAnswer() {
+
+    if (!locked) answer.value = "";
+
+}
+
+function deleteNumber() {
+
+    if (!locked) {
+
+        answer.value = answer.value.slice(0, -1);
+
+    }
+
+}
+
+function checkAnswer() {
+
+    if (locked || finished) return;
+
+    if (!/^\d+$/.test(answer.value.trim())) {
+
+        feedback.textContent = "请先输入数字！";
+
+        feedback.style.color = "#f59e0b";
+
+        return;
+
+    }
+
+    locked = true;
+
+    let userAnswer = Number(answer.value);
+
+    let rightAnswer = a * b;
+
+    total++;
+
+    if (userAnswer === rightAnswer) {
+
+        correct++;
+
+        streak++;
+
+        bestStreak = Math.max(bestStreak, streak);
+
+        feedback.style.color = "#16a34a";
+
+        if (streak % 10 === 0) {
+
+            feedback.textContent =
+
+                "🏆 太棒了！连续答对 " + streak + " 题！";
+
+        } else {
+
+            feedback.textContent = "🎉 答对啦！";
+
+        }
+
+        nextTimer = setTimeout(newQuestion, 700);
+
+    } else {
+
+        streak = 0;
+
+        mistakes.push([a, b]);
+
+        feedback.style.color = "#dc2626";
+
+        feedback.textContent =
+
+            "正确答案：" + a + " × " + b + " = " + rightAnswer;
+
+        nextTimer = setTimeout(newQuestion, 2000);
+
+    }
+
+    updateStats();
+
+}
+
+function updateStats() {
+
+    document.getElementById("correct").textContent = correct;
+
+    document.getElementById("streak").textContent = streak;
+
+    let accuracy = total === 0
+
+        ? 0
+
+        : Math.round(correct / total * 100);
+
+    document.getElementById("accuracy").textContent =
+
+        accuracy + "%";
+
+    let progress = limit === 0
+
+        ? 0
+
+        : Math.min(100, total / limit * 100);
+
+    document.getElementById("bar").style.width =
+
+        progress + "%";
+
+}
+
+function finishGame() {
+
+    finished = true;
+
+    locked = true;
+
+    document.getElementById("game").style.display = "none";
+
+    document.getElementById("counter").textContent =
+
+        "练习完成！";
+
+    let accuracy = total === 0
+
+        ? 0
+
+        : Math.round(correct / total * 100);
+
+    let result = document.getElementById("result");
+
+    result.style.display = "block";
+
+    result.innerHTML = `
+
+        <h2>🏆 练习完成！</h2>
+
+        <p>总题数：${total}</p>
+
+        <p>答对：${correct} 题</p>
+
+        <p>答错：${total - correct} 题</p>
+
+        <p>正确率：${accuracy}%</p>
+
+        <p>最高连续答对：${bestStreak} 题</p>
+
+        <h3>继续加油！🌟</h3>
+
+    `;
+
+}
+
+function practiceMistakes() {
+
+    if (mistakes.length === 0) {
+
+        alert("目前没有错题，继续加油！");
+
+        return;
+
+    }
+
+    clearTimeout(nextTimer);
+
+    questions = shuffle(mistakes.slice());
+
+    mistakes = [];
+
+    limit = questions.length;
+
+    correct = 0;
+
+    total = 0;
+
+    streak = 0;
+
+    bestStreak = 0;
+
+    reviewMode = true;
+
+    finished = false;
+
+    locked = false;
+
+    document.getElementById("game").style.display = "block";
+
+    document.getElementById("result").style.display = "none";
+
+    updateStats();
+
+    newQuestion();
+
+}
+
+answer.addEventListener("input", function() {
+
+    this.value = this.value.replace(/[^0-9]/g, "");
+
+});
+
+answer.addEventListener("keydown", function(event) {
+
+    if (event.key === "Enter") {
+
+        event.preventDefault();
+
+        checkAnswer();
+
+    }
+
+});
+
+startGame();
+
+</script>
+
+</body>
+
+</html>
