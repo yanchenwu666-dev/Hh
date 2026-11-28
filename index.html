@@ -1210,3 +1210,294 @@ checkAnswer = function() {
 };
 
 </script>
+<style>
+
+ruby {
+
+    ruby-position: over;
+
+}
+
+rt {
+
+    font-size: 0.48em;
+
+    font-weight: normal;
+
+    line-height: 1.5;
+
+}
+
+#rewardCard {
+
+    position: relative;
+
+}
+
+#rewardClose {
+
+    position: absolute;
+
+    top: 8px;
+
+    right: 8px;
+
+    width: 44px;
+
+    height: 44px;
+
+    padding: 0 !important;
+
+    background: #eeeeee !important;
+
+    color: #555555 !important;
+
+    font-size: 30px !important;
+
+    border-radius: 50% !important;
+
+}
+
+.stat {
+
+    padding-top: 18px;
+
+}
+
+#answerHint {
+
+    margin-bottom: 8px;
+
+    color: #666;
+
+}
+
+</style>
+
+<script>
+
+// 拼音工具
+
+function py(text, pinyin) {
+
+    return `<ruby>${text}<rt>${pinyin}</rt></ruby>`;
+
+}
+
+// 添加关闭按钮
+
+const rewardClose = document.createElement("button");
+
+rewardClose.id = "rewardClose";
+
+rewardClose.textContent = "×";
+
+rewardClose.setAttribute("aria-label", "关闭");
+
+rewardClose.onclick = function() {
+
+    closeReward();
+
+};
+
+document.getElementById("rewardCard")
+
+    .appendChild(rewardClose);
+
+// 网页标题
+
+document.querySelector(".container h1").innerHTML =
+
+    py("乘法练习第一版",
+
+       "chéng fǎ liàn xí dì yī bǎn");
+
+// 统计区域
+
+const statNames = [
+
+    ["答对", "dá duì"],
+
+    ["正确率", "zhèng què lǜ"],
+
+    ["连续答对", "lián xù dá duì"]
+
+];
+
+document.querySelectorAll(".stat").forEach(
+
+    function(stat, i) {
+
+        const number = stat.querySelector("strong");
+
+        stat.innerHTML = py(
+
+            statNames[i][0],
+
+            statNames[i][1]
+
+        );
+
+        stat.appendChild(number);
+
+    }
+
+);
+
+// 累计积分
+
+const pointsNumber =
+
+    document.getElementById("totalPoints");
+
+pointsBox.innerHTML =
+
+    py("🏆 累计积分", "lěi jì jī fēn")
+
+    + "<br>";
+
+pointsBox.appendChild(pointsNumber);
+
+// 输入答案
+
+const answerHint = document.createElement("div");
+
+answerHint.id = "answerHint";
+
+answerHint.innerHTML =
+
+    py("请输入答案", "qǐng shū rù dá àn");
+
+answer.before(answerHint);
+
+answer.placeholder = "?";
+
+// 确认答案按钮
+
+document.querySelector(".submit").innerHTML =
+
+    py("确认答案 ✓", "què rèn dá àn");
+
+// 重新开始与错题练习
+
+const secondaryButtons =
+
+    document.querySelectorAll(".secondary");
+
+secondaryButtons[0].innerHTML =
+
+    py("🔄 重新开始", "chóng xīn kāi shǐ");
+
+secondaryButtons[1].innerHTML =
+
+    py("📚 错题练习", "cuò tí liàn xí");
+
+// 清空按钮
+
+document.querySelectorAll(".keyboard button")
+
+    .forEach(function(button) {
+
+        if (button.textContent.trim() === "清空") {
+
+            button.innerHTML =
+
+                py("清空", "qīng kōng");
+
+        }
+
+    });
+
+// 难度选择
+
+const difficultyOptions =
+
+    document.getElementById("difficulty").options;
+
+difficultyOptions[0].text =
+
+    "简单 jiǎn dān：1～5";
+
+difficultyOptions[1].text =
+
+    "进阶 jìn jiē：1～7";
+
+difficultyOptions[2].text =
+
+    "全部 quán bù：1～10";
+
+// 题量选择
+
+const amountOptions =
+
+    document.getElementById("amount").options;
+
+Array.from(amountOptions).forEach(function(option) {
+
+    if (option.value === "0") {
+
+        option.text = "无限练习 wú xiàn";
+
+    } else {
+
+        option.text = option.value + " 道题 dào tí";
+
+    }
+
+});
+
+// 幸运奖励标题
+
+document.querySelector("#rewardCard h2").innerHTML =
+
+    py("⚡ 幸运奖励", "xìng yùn jiǎng lì");
+
+// 奖励确认按钮
+
+document.querySelector(
+
+    '#rewardCard button[onclick]'
+
+).innerHTML = py("确定", "què dìng");
+
+// 连击拼音
+
+updateCombo = function() {
+
+    comboBox.innerHTML =
+
+        py("连击", "lián jī")
+
+        + "：" + streak
+
+        + " | "
+
+        + py("基础积分", "jī chǔ jī fēn")
+
+        + "：" + getComboPoints();
+
+};
+
+updateCombo();
+
+// Bingo 积分拼音
+
+const previousAddPoint = addPoint;
+
+addPoint = function() {
+
+    const before = totalPoints;
+
+    previousAddPoint();
+
+    document.getElementById("bingoPoints")
+
+        .innerHTML =
+
+        "+" + (totalPoints - before)
+
+        + " " + py("积分", "jī fēn");
+
+};
+
+</script>
